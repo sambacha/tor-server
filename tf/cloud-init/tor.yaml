@@ -1,21 +1,21 @@
 users:
-  - name: bs
+  - name: tornado
     uid: 2000
 
 write_files:
-  - path: /home/bs/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc.b64
+  - path: /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc.b64
     permissions: 0600
     owner: root
     content: |
         ${v3_pubk}
 
-  - path: /home/bs/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc.b64
+  - path: /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc.b64
     permissions: 0600
     owner: root
     content: |
         ${v3_pk}
 
-  - path: /home/bs/torrcv3
+  - path: /home/tornado/torrcv3
     permissions: 0644
     owner: root
     content: |
@@ -42,7 +42,7 @@ write_files:
         HiddenServicePort 195 ${tor_lb}:195
         HiddenServicePort 587 ${tor_lb}:587
 
-  - path: /home/bs/tor_v3/hidden_service_v3/hostname
+  - path: /home/tornado/tor_v3/hidden_service_v3/hostname
     permissions: 0600
     owner: root
     content: |
@@ -60,13 +60,13 @@ write_files:
         [Service]
         Type=oneshot
         RemainAfterExit=true
-        Environment=HOME=/home/bs
+        Environment=HOME=/home/tornado
         ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${docker_tag_gcloud}
         ExecStart=/usr/bin/docker run \
             --name=decrypt \
             --rm \
-            -v /home/bs/tor_v3/hidden_service_v3/:/root/secrets:rw \
+            -v /home/tornado/tor_v3/hidden_service_v3/:/root/secrets:rw \
             "${docker_tag_gcloud}" gcloud kms decrypt \
                 --location=${kms_location} \
                 --keyring=${kms_key_ring} \
@@ -76,15 +76,15 @@ write_files:
         ExecStart=/usr/bin/docker run \
             --name=decrypt \
             --rm \
-            -v /home/bs/tor_v3/hidden_service_v3/:/root/secrets:rw \
+            -v /home/tornado/tor_v3/hidden_service_v3/:/root/secrets:rw \
             "${docker_tag_gcloud}" gcloud kms decrypt \
                 --location=${kms_location} \
                 --keyring=${kms_key_ring} \
                 --key=${kms_key} \
                 --ciphertext-file=/root/secrets/hs_ed25519_secret_key.enc \
                 --plaintext-file=/root/secrets/hs_ed25519_secret_key
-        ExecStartPost=-/bin/rm /home/bs/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc /home/bs/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc.b64
-        ExecStartPost=-/bin/rm /home/bs/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc /home/bs/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc.b64
+        ExecStartPost=-/bin/rm /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc.b64
+        ExecStartPost=-/bin/rm /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc.b64
 
 
   - path: /etc/systemd/system/torv3.service
@@ -99,21 +99,21 @@ write_files:
         [Service]
         Restart=always
         RestartSec=1
-        Environment=HOME=/home/bs
+        Environment=HOME=/home/tornado
         ExecStartPre=/usr/bin/docker-credential-gcr configure-docker
         ExecStartPre=/usr/bin/docker pull ${docker_tag}
-        ExecStartPre=-/bin/chown -R bs:bs /home/bs/tor_v3/
-        ExecStartPre=-/bin/chmod -R 2700 /home/bs/tor_v3/
-        ExecStartPre=-/bin/chmod 0644 /home/bs/tor_v3/hidden_service_v3/hs_ed25519_public_key
-        ExecStartPre=-/bin/chmod 0600 /home/bs/tor_v3/hidden_service_v3/hs_ed25519_secret_key
+        ExecStartPre=-/bin/chown -R tornado:tornado /home/tornado/tor_v3/
+        ExecStartPre=-/bin/chmod -R 2700 /home/tornado/tor_v3/
+        ExecStartPre=-/bin/chmod 0644 /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_public_key
+        ExecStartPre=-/bin/chmod 0600 /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_secret_key
         ExecStartPre=/sbin/iptables -A INPUT -m multiport -p tcp --dports 110,143,195 -j ACCEPT
         ExecStart=/usr/bin/docker run \
             --network=host \
             --pid=host \
             --name=torv3 \
             --tmpfs /tmp/ \
-            -v /home/bs/torrcv3:/home/tor/torrc:ro \
-            -v /home/bs/tor_v3:/home/tor/tor:rw \
+            -v /home/tornado/torrcv3:/home/tor/torrc:ro \
+            -v /home/tornado/tor_v3:/home/tor/tor:rw \
             "${docker_tag}" tor -f /home/tor/torrc
         ExecStop=/usr/bin/docker rm -f torv3
         ExecStopPost=/sbin/iptables -D INPUT -m multiport -p tcp --dports 110,143,195 -j ACCEPT
@@ -156,8 +156,8 @@ write_files:
 
 runcmd:
   - systemctl daemon-reload
-  - base64 -d /home/bs/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc.b64 > /home/bs/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc
-  - base64 -d /home/bs/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc.b64 > /home/bs/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc
+  - base64 -d /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc.b64 > /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_public_key.enc
+  - base64 -d /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc.b64 > /home/tornado/tor_v3/hidden_service_v3/hs_ed25519_secret_key.enc
   - systemctl enable torv3.service
   - systemctl enable decrypt.service
   - systemctl start decrypt.service
